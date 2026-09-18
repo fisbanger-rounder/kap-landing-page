@@ -1,0 +1,1732 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title data-i18n="doc.title">PT Kreasi Andalan Pratama — Sistem Operasi Lapangan</title>
+<meta name="description" id="meta-desc" content="PT Kreasi Andalan Pratama. Integrator sistem operasi lapangan: IoT, CCTV, ticketing, pelacakan aset, dan pelaporan untuk fasilitas industri dan komersial.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<style>
+/* ============================================================
+   FIELD-CONSOLE TOKENS
+   Palette logic: warm near-black canvas, sodium-amber signal,
+   low-chroma tinted neutrals. No blue. No purple.
+   ============================================================ */
+:root {
+  /* canvas — warm near-black, not pure #000 */
+  --bg-0:  oklch(0.105 0.008 70);   /* page background */
+  --bg-1:  oklch(0.140 0.010 70);   /* surface */
+  --bg-2:  oklch(0.175 0.012 70);   /* elevated panel */
+  --bg-3:  oklch(0.225 0.014 70);   /* hovered/active panel */
+
+  /* lines */
+  --line-1: oklch(0.285 0.012 70);  /* default border */
+  --line-2: oklch(0.380 0.014 70);  /* emphasized border */
+  --line-3: oklch(0.520 0.060 80);  /* signal border */
+
+  /* type */
+  --ink-1:  oklch(0.965 0.010 80);  /* primary */
+  --ink-2:  oklch(0.780 0.012 75);  /* secondary */
+  --ink-3:  oklch(0.560 0.014 75);  /* tertiary */
+  --ink-4:  oklch(0.380 0.014 75);  /* muted */
+
+  /* signal — sodium amber, used sparingly */
+  --sig:   oklch(0.780 0.180 75);
+  --sig-soft: oklch(0.780 0.180 75 / 0.18);
+  --sig-line: oklch(0.780 0.180 75 / 0.45);
+
+  /* status — all kept low-chroma, warm */
+  --ok:    oklch(0.760 0.130 145);   /* alive, ok */
+  --warn:  oklch(0.780 0.160 60);    /* degraded */
+  --err:   oklch(0.640 0.180 25);    /* offline, fault */
+
+  /* type roles */
+  --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+
+  /* spacing — 1/4/9 rhythm */
+  --u1: 4px;
+  --u4: 16px;
+  --u9: 36px;
+
+  /* measure */
+  --measure: 68ch;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  background: var(--bg-0);
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-1);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, oklch(0.180 0.018 70 / 0.55), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, oklch(0.160 0.012 60 / 0.5), transparent 60%),
+    var(--bg-0);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* a faint field-noise grain that prevents the canvas from feeling flat */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 39px, oklch(0.180 0.010 70 / 0.35) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, oklch(0.180 0.010 70 / 0.20) 39px 40px);
+  opacity: 0.35;
+  z-index: 0;
+  mix-blend-mode: overlay;
+}
+
+::selection { background: var(--sig); color: oklch(0.105 0.008 70); }
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+/* ============================================================
+   FOCUS — visible, amber, offset
+   ============================================================ */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--sig);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ============================================================
+   TOP CHROME — masthead
+   ============================================================ */
+.bar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--u4) clamp(20px, 4vw, 56px);
+  background: oklch(0.105 0.008 70 / 0.86);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  border-bottom: 1px solid var(--line-1);
+}
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink-1);
+}
+
+.brand-logo {
+  height: 30px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.brand .dot {
+  width: 8px; height: 8px;
+  background: var(--sig);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--sig-soft);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.brand .sep { color: var(--ink-4); margin: 0 6px; }
+.brand .city { color: var(--ink-3); }
+
+.nav { display: flex; gap: var(--u9); align-items: center; }
+
+.nav a {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 8px 0;
+  position: relative;
+}
+.nav a::after {
+  content: "";
+  position: absolute; left: 0; right: 100%; bottom: 4px;
+  height: 1px; background: var(--sig);
+  transition: right 280ms cubic-bezier(.22,.61,.36,1);
+}
+.nav a:hover { color: var(--ink-1); }
+.nav a:hover::after, .nav a:focus-visible::after { right: 0; }
+
+.nav-cta {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(0.105 0.008 70);
+  background: var(--sig);
+  padding: 10px 18px;
+  border: 1px solid var(--sig);
+  transition: background 180ms, color 180ms;
+}
+.nav-cta:hover { background: oklch(0.880 0.180 80); }
+.nav-cta:active { transform: translateY(1px); }
+
+/* language switcher */
+.lang-switch {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 8px 12px;
+  border: 1px solid var(--line-2);
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: border-color 180ms, color 180ms, background 180ms;
+}
+.lang-switch:hover { border-color: var(--sig-line); color: var(--ink-1); }
+.lang-switch .active { color: var(--sig); }
+
+@media (max-width: 760px) {
+  .nav a:not(.nav-cta) { display: none; }
+  .brand .full-name, .brand .city, .brand .sep { display: none; }
+}
+@media (max-width: 480px) {
+  .brand .full-name, .brand .city, .brand .sep { display: none; }
+}
+
+/* ============================================================
+   HERO — editorial, left-anchored, proof object on the right
+   ============================================================ */
+main { position: relative; z-index: 1; }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  gap: clamp(24px, 5vw, 72px);
+  padding: clamp(40px, 7vw, 96px) clamp(20px, 4vw, 56px) clamp(48px, 7vw, 88px);
+  max-width: 1480px;
+  margin: 0 auto;
+  align-items: end;
+}
+
+@media (max-width: 1000px) {
+  .hero { grid-template-columns: 1fr; gap: var(--u9); }
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: var(--u9);
+}
+
+.hero-eyebrow .tick {
+  display: inline-block;
+  width: 24px; height: 1px;
+  background: var(--sig);
+}
+
+h1.hero-title {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(36px, 4.6vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--ink-1);
+  margin-bottom: clamp(20px, 3vw, 32px);
+  max-width: none;
+}
+
+h1.hero-title em {
+  font-style: normal;
+  font-family: var(--mono);
+  font-weight: 400;
+  color: var(--sig);
+  font-size: 0.78em;
+  letter-spacing: -0.01em;
+}
+
+.hero-sub {
+  font-family: var(--sans);
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 56ch;
+  margin-bottom: clamp(28px, 4vw, 40px);
+}
+
+.hero-actions { display: flex; gap: var(--u4); flex-wrap: wrap; }
+
+.btn-primary {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: oklch(0.105 0.008 70);
+  background: var(--sig);
+  padding: 14px 22px;
+  border: 1px solid var(--sig);
+  display: inline-flex; align-items: center; gap: 10px;
+  transition: background 180ms;
+}
+.btn-primary:hover { background: oklch(0.880 0.180 80); }
+.btn-primary .arrow { transition: transform 220ms; }
+.btn-primary:hover .arrow { transform: translateX(4px); }
+
+.btn-ghost {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  padding: 14px 22px;
+  border: 1px solid var(--line-2);
+  display: inline-flex; align-items: center; gap: 10px;
+  transition: border-color 180ms, color 180ms, background 180ms;
+}
+.btn-ghost:hover { border-color: var(--sig-line); color: var(--ink-1); background: oklch(0.140 0.010 70 / 0.6); }
+
+/* proof object — a live console panel */
+.console {
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: 1px solid var(--line-1);
+  border-radius: 4px;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow: hidden;
+  position: relative;
+}
+
+.console::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 100% 0%, var(--sig-soft), transparent 60%);
+  pointer-events: none;
+}
+
+.console-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-1);
+  background: oklch(0.140 0.010 70 / 0.6);
+  position: relative;
+}
+
+.console-head .lhs { display: flex; align-items: center; gap: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+.console-head .lhs .live-dot { width: 6px; height: 6px; background: var(--ok); border-radius: 50%; box-shadow: 0 0 8px oklch(0.760 0.130 145 / 0.6); }
+.console-head .rhs { color: var(--ink-4); font-size: 11px; }
+
+.console-body { padding: 14px 16px; }
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line-1);
+  margin-bottom: 14px;
+}
+.kpi {
+  padding: 14px 12px;
+  background: var(--bg-1);
+}
+.kpi .label { font-size: 10px; color: var(--ink-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+.kpi .value { font-size: 22px; color: var(--ink-1); font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.kpi .delta { font-size: 10px; color: var(--ok); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .delta.dn { color: var(--err); }
+
+.stream { font-size: 11px; line-height: 1.7; }
+.stream .row { display: grid; grid-template-columns: 64px 70px 1fr; gap: 10px; padding: 2px 0; align-items: baseline; }
+.stream .ts { color: var(--ink-4); font-variant-numeric: tabular-nums; }
+.stream .tag { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.stream .tag.iot { color: var(--sig); }
+.stream .tag.cctv { color: oklch(0.760 0.130 145); }
+.stream .tag.ast { color: oklch(0.760 0.140 200); }
+.stream .tag.tkt { color: oklch(0.720 0.090 320); }
+.stream .tag.rpt { color: var(--ink-1); }
+.stream .msg { color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ============================================================
+   TICKER — running field telemetry under the hero
+   ============================================================ */
+.ticker {
+  border-top: 1px solid var(--line-1);
+  border-bottom: 1px solid var(--line-1);
+  background: var(--bg-1);
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  position: relative;
+}
+
+.ticker .track {
+  display: flex;
+  gap: 48px;
+  padding: 14px 0;
+  white-space: nowrap;
+  animation: marquee 60s linear infinite;
+  width: max-content;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker .item { display: inline-flex; align-items: center; gap: 10px; }
+.ticker .item .k { color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; }
+.ticker .item .v { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.ticker .item .ok { color: var(--ok); }
+.ticker .item .err { color: var(--err); }
+.ticker .item .sep { color: var(--ink-4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand .dot { animation: none; }
+  .ticker .track { animation: none; }
+}
+
+/* ============================================================
+   SECTION SHELL
+   ============================================================ */
+section { padding: clamp(60px, 8vw, 112px) clamp(20px, 4vw, 56px); }
+.section { max-width: 1480px; margin: 0 auto; }
+
+.section-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: clamp(24px, 4vw, 64px);
+  margin-bottom: clamp(40px, 5vw, 72px);
+  align-items: end;
+}
+@media (max-width: 900px) { .section-head { grid-template-columns: 1fr; gap: var(--u9); } }
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: flex; align-items: center; gap: 10px;
+}
+.section-label .num { color: var(--sig); }
+
+.section-title {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(28px, 3.6vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--ink-1);
+  text-wrap: balance;
+}
+.section-title em { font-style: normal; color: var(--sig); }
+
+.section-lede {
+  font-family: var(--sans);
+  color: var(--ink-2);
+  font-size: clamp(15px, 1.2vw, 18px);
+  line-height: 1.6;
+  max-width: 58ch;
+  margin-top: var(--u4);
+}
+
+/* ============================================================
+   SERVICES — five modules, each anchored by a real artifact
+   ============================================================ */
+.modules {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1px;
+  background: var(--line-1);
+  border: 1px solid var(--line-1);
+}
+
+.module {
+  grid-column: span 6;
+  background: var(--bg-1);
+  padding: clamp(24px, 3vw, 36px);
+  display: flex; flex-direction: column;
+  min-height: 380px;
+  position: relative;
+  transition: background 200ms;
+}
+.module:hover { background: var(--bg-2); }
+
+.module.span-full { grid-column: span 12; min-height: 320px; }
+.module.span-third { grid-column: span 4; }
+.module.span-half { grid-column: span 6; }
+
+@media (max-width: 980px) {
+  .module, .module.span-full, .module.span-third, .module.span-half { grid-column: span 12; }
+}
+@media (min-width: 981px) and (max-width: 1200px) {
+  .module.span-third { grid-column: span 6; }
+}
+
+.module-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--u4); }
+.module-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+.module-id { color: var(--sig); }
+
+.module-title {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--ink-1);
+  margin-bottom: 12px;
+  text-wrap: balance;
+}
+
+.module-body {
+  color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 52ch;
+  margin-bottom: var(--u9);
+}
+
+/* the artifact area — a real operational UI, not decoration */
+.artifact {
+  margin-top: auto;
+  background: var(--bg-0);
+  border: 1px solid var(--line-1);
+  border-radius: 3px;
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.artifact .bar-strip {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-1);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-4);
+}
+.artifact .bar-strip .ok { color: var(--ok); }
+
+/* IoT artifact: live trace */
+.trace { font-variant-numeric: tabular-nums; line-height: 1.7; }
+.trace .l { color: var(--ink-4); }
+.trace .ok { color: var(--ok); }
+.trace .warn { color: var(--warn); }
+
+/* CCTV artifact: frame grid + overlay */
+.cctv {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; aspect-ratio: 16/7;
+  position: relative;
+}
+.cctv .cell {
+  background: linear-gradient(135deg, oklch(0.225 0.014 70), oklch(0.150 0.010 70));
+  border: 1px solid oklch(0.250 0.012 70);
+  position: relative;
+  overflow: hidden;
+}
+.cctv .cell::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(transparent 0%, transparent 49%, oklch(0.380 0.014 70 / 0.4) 50%, transparent 51%, transparent 100%),
+    linear-gradient(90deg, transparent 0%, transparent 49%, oklch(0.380 0.014 70 / 0.4) 50%, transparent 51%, transparent 100%);
+  background-size: 6px 6px;
+  opacity: 0.6;
+}
+.cctv .cell::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 30% 70%, oklch(0.780 0.180 75 / 0.2), transparent 50%);
+}
+.cctv .cell:nth-child(7)::after { background: radial-gradient(circle at 70% 30%, oklch(0.640 0.180 25 / 0.35), transparent 60%); }
+.cctv .cell .label {
+  position: absolute; top: 4px; left: 4px;
+  font-family: var(--mono); font-size: 9px;
+  color: var(--ink-1); z-index: 2;
+  background: oklch(0.105 0.008 70 / 0.7);
+  padding: 1px 4px; letter-spacing: 0.06em;
+}
+.cctv .cell .rec {
+  position: absolute; top: 4px; right: 4px;
+  font-family: var(--mono); font-size: 9px;
+  color: var(--err); z-index: 2;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.cctv .cell .rec::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--err); box-shadow: 0 0 4px var(--err); }
+
+/* Ticketing artifact: queue */
+.queue { display: flex; flex-direction: column; gap: 6px; }
+.queue .qrow {
+  display: grid; grid-template-columns: 50px 1fr 70px 60px; gap: 10px;
+  padding: 6px 0; border-bottom: 1px dashed var(--line-1);
+  align-items: center;
+  font-size: 10px; font-variant-numeric: tabular-nums;
+}
+.queue .qrow:last-child { border-bottom: none; }
+.queue .qrow .id { color: var(--ink-3); }
+.queue .qrow .sub { color: var(--ink-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queue .qrow .loc { color: var(--ink-4); }
+.queue .qrow .eta { color: var(--sig); }
+.queue .qrow.p2 .eta { color: var(--warn); }
+
+/* Asset tracking artifact: list + pings */
+.assets { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.assets .col h4 { font-size: 10px; color: var(--ink-4); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+.assets ul { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.assets li { display: flex; justify-content: space-between; font-size: 11px; }
+.assets li .id { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.assets li .where { color: var(--ink-3); }
+.assets li .pulse { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); margin-right: 6px; box-shadow: 0 0 6px var(--ok); animation: pulse 2s ease-in-out infinite; }
+.assets li.moved .pulse { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+.assets li.idle .pulse { background: var(--ink-4); box-shadow: none; }
+
+/* Reporting artifact: chart */
+.chart {
+  height: 140px;
+  display: flex; align-items: flex-end; gap: 6px;
+  padding-top: 8px;
+}
+.chart .bar {
+  flex: 1;
+  background: linear-gradient(180deg, var(--sig), oklch(0.520 0.140 75));
+  border-top: 1px solid oklch(0.880 0.180 80);
+  position: relative;
+  min-height: 4px;
+}
+.chart .bar.alt { background: linear-gradient(180deg, oklch(0.560 0.014 75), oklch(0.380 0.014 75)); border-top-color: var(--ink-3); }
+.chart .legend {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--ink-4);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.chart .legend .v { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   HOW WE WORK — process strip, four phases
+   ============================================================ */
+.process {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--line-1);
+  border-bottom: 1px solid var(--line-1);
+}
+
+@media (max-width: 900px) { .process { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .process { grid-template-columns: 1fr; } }
+
+.phase {
+  padding: clamp(24px, 3vw, 36px);
+  border-right: 1px solid var(--line-1);
+  position: relative;
+}
+.phase:last-child { border-right: none; }
+@media (max-width: 900px) {
+  .phase:nth-child(2) { border-right: none; }
+  .phase:nth-child(1), .phase:nth-child(3) { border-bottom: 1px solid var(--line-1); }
+}
+@media (max-width: 560px) {
+  .phase { border-right: none; border-bottom: 1px solid var(--line-1); }
+  .phase:last-child { border-bottom: none; }
+}
+
+.phase .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--sig);
+  letter-spacing: 0.14em;
+  margin-bottom: var(--u4);
+}
+.phase h3 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--ink-1);
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+.phase p {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.phase .dur {
+  margin-top: var(--u4);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   NUMBERS — field-grade, sourced
+   ============================================================ */
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line-1);
+  border: 1px solid var(--line-1);
+}
+@media (max-width: 900px) { .numbers { grid-template-columns: repeat(2, 1fr); } }
+
+.num-card {
+  padding: clamp(24px, 3vw, 36px);
+  background: var(--bg-1);
+}
+.num-card .big {
+  font-family: var(--mono);
+  font-size: clamp(32px, 4vw, 48px);
+  color: var(--ink-1);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.num-card .big .unit { color: var(--sig); font-size: 0.6em; margin-left: 4px; }
+.num-card .lbl { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+.num-card .src {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--line-1);
+  padding-top: 8px;
+}
+
+/* ============================================================
+   ENGAGEMENT MODEL — table-like
+   ============================================================ */
+.engage {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1px;
+  background: var(--line-1);
+  border: 1px solid var(--line-1);
+}
+@media (max-width: 900px) { .engage { grid-template-columns: 1fr; } }
+
+.engage .pane { background: var(--bg-1); padding: clamp(28px, 3vw, 44px); }
+.engage .pane h3 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--ink-1);
+  margin-bottom: var(--u4);
+  letter-spacing: -0.01em;
+}
+.engage .pane ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.engage .pane li {
+  display: grid; grid-template-columns: 28px 1fr; gap: 12px;
+  color: var(--ink-2); font-size: 14px; line-height: 1.55;
+  align-items: baseline;
+}
+.engage .pane li::before {
+  content: counter(li, decimal-leading-zero);
+  counter-increment: li;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--sig);
+  letter-spacing: 0.06em;
+  padding-top: 2px;
+}
+.engage .pane.scope { counter-reset: li; }
+
+.engage .pane.timeline { background: var(--bg-0); }
+.engage .pane.timeline h3 { color: var(--ink-1); }
+.engage .pane.timeline .row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line-1); font-family: var(--mono); font-size: 12px; }
+.engage .pane.timeline .row:last-child { border-bottom: none; }
+.engage .pane.timeline .row .k { color: var(--ink-3); letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px; }
+.engage .pane.timeline .row .v { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.engage .pane.timeline .row .v.warn { color: var(--warn); }
+.engage .pane.timeline .row .v.ok { color: var(--ok); }
+
+/* ============================================================
+   CONTACT — direct, terminal-style
+   ============================================================ */
+.contact {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 80px);
+  border-top: 1px solid var(--line-1);
+  padding-top: clamp(60px, 8vw, 112px);
+  padding-bottom: clamp(60px, 8vw, 112px);
+}
+@media (max-width: 900px) { .contact { grid-template-columns: 1fr; } }
+
+.contact h2 {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: clamp(32px, 4.2vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink-1);
+  text-wrap: balance;
+  margin-bottom: var(--u9);
+}
+.contact h2 .accent { color: var(--sig); font-family: var(--mono); font-weight: 400; font-size: 0.75em; }
+
+.contact .lede {
+  font-family: var(--sans);
+  color: var(--ink-2);
+  font-size: 17px;
+  line-height: 1.6;
+  max-width: 52ch;
+  margin-bottom: clamp(28px, 3vw, 40px);
+}
+
+.contact .actions { display: flex; gap: var(--u4); flex-wrap: wrap; }
+
+.contact-card {
+  background: var(--bg-1);
+  border: 1px solid var(--line-1);
+  padding: clamp(24px, 3vw, 32px);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink-2);
+  align-self: start;
+}
+.contact-card .row { display: grid; grid-template-columns: 80px 1fr; gap: 12px; }
+.contact-card .k { color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10px; padding-top: 2px; }
+.contact-card .v { color: var(--ink-1); }
+.contact-card a.v:hover { color: var(--sig); }
+.contact-card .sep { color: var(--line-2); margin: 0 8px; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.foot {
+  border-top: 1px solid var(--line-1);
+  padding: clamp(24px, 3vw, 36px) clamp(20px, 4vw, 56px);
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-wrap: wrap; gap: 12px;
+}
+.foot .meta { display: flex; gap: 24px; }
+.foot a:hover { color: var(--sig); }
+
+/* ============================================================
+   UTILITY
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<header class="bar" role="banner">
+  <a href="#" class="brand" aria-label="PT Kreasi Andalan Pratama beranda">
+    <img src="src/image/LogoKAP-NoBG.png" alt="Logo PT Kreasi Andalan Pratama" class="brand-logo">
+    <span class="dot" aria-hidden="true"></span>
+    <span>KAP</span>
+    <span class="sep">/</span>
+    <span class="full-name">Kreasi Andalan Pratama</span>
+    <span class="sep">/</span>
+    <span class="city">Jakarta · ID</span>
+  </a>
+  <nav class="nav" aria-label="Utama">
+    <a href="#layanan" data-i18n="nav.services">Layanan</a>
+    <a href="#proses" data-i18n="nav.process">Proses</a>
+    <a href="#portofolio" data-i18n="nav.portfolio">Portofolio</a>
+    <a href="#kontak" class="nav-cta" data-i18n="nav.contact">Hubungi</a>
+    <button type="button" class="lang-switch" data-i18n-aria="nav.switchLabel" aria-label="Ganti bahasa">
+      <span data-lang-label="id" class="active">ID</span><span>·</span><span data-lang-label="en">EN</span>
+    </button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- HERO ============================================================ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div>
+      <p class="hero-eyebrow">
+        <span class="tick" aria-hidden="true"></span>
+        <span data-i18n="hero.eyebrow">Integrator sistem operasi lapangan · sejak 2014</span>
+      </p>
+      <h1 id="hero-title" class="hero-title" data-i18n-html="hero.title">
+        Bangun, pasang,<br>lalu <em>pantau</em><br>infrastruktur Anda.
+      </h1>
+      <p class="hero-sub" data-i18n="hero.sub">
+        PT Kreasi Andalan Pratama merancang dan mengintegrasikan lima subsistem
+        yang menjaga fasilitas Anda tetap berjalan: telemetri IoT, pengawasan
+        CCTV, ticketing internal, pelacakan aset, dan pelaporan terpusat.
+      </p>
+      <div class="hero-actions">
+        <a href="#kontak" class="btn-primary">
+          <span data-i18n="hero.cta1">Diskusi kebutuhan</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="#layanan" class="btn-ghost" data-i18n="hero.cta2">Lihat sistem</a>
+      </div>
+    </div>
+
+    <!-- LIVE PROOF OBJECT: control-room console -->
+    <aside class="console" data-i18n-aria="console.label" aria-label="Tampilan konsol operasi live">
+      <div class="console-head">
+        <span class="lhs"><span class="live-dot" aria-hidden="true"></span> <span data-i18n="console.head">OPS · LIVE</span></span>
+        <span class="rhs" data-i18n="console.site">site: PLANT-04 · shift: C</span>
+      </div>
+      <div class="console-body">
+        <div class="kpi-grid" aria-hidden="true">
+          <div class="kpi"><div class="label" data-i18n="console.kpi1">Sensor</div><div class="value">412</div><div class="delta">+6</div></div>
+          <div class="kpi"><div class="label" data-i18n="console.kpi2">Kamera</div><div class="value">86</div><div class="delta">↑ 100%</div></div>
+          <div class="kpi"><div class="label" data-i18n="console.kpi3">Tiket</div><div class="value">23</div><div class="delta dn">-4</div></div>
+          <div class="kpi"><div class="label" data-i18n="console.kpi4">Aset</div><div class="value">1,247</div><div class="delta">+11</div></div>
+        </div>
+        <div class="stream" aria-hidden="true">
+          <div class="row"><span class="ts">14:02:18</span><span class="tag iot">IoT</span><span class="msg" data-i18n="console.msg1">boiler-02 · tekanan 7.4 bar · dalam batas</span></div>
+          <div class="row"><span class="ts">14:02:11</span><span class="tag cctv">CCTV</span><span class="msg" data-i18n="console.msg2">cam-G7 · motion di area bongkar · rekam aktif</span></div>
+          <div class="row"><span class="ts">14:01:54</span><span class="tag ast">AST</span><span class="msg" data-i18n="console.msg3">forklift-FK-19 · pindah dari B3 ke A2</span></div>
+          <div class="row"><span class="ts">14:01:36</span><span class="tag tkt">TKT</span><span class="msg" data-i18n="console.msg4">#TK-2204 ditutup · teknisi: R. Hadi</span></div>
+          <div class="row"><span class="ts">14:01:22</span><span class="tag rpt">RPT</span><span class="msg" data-i18n="console.msg5">laporan shift pagi tersinkron ke dasbor</span></div>
+          <div class="row"><span class="ts">14:01:08</span><span class="tag iot">IoT</span><span class="msg" data-i18n="console.msg6">genset-01 · suhu naik 2°C · dipantau</span></div>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <!-- TICKER =========================================================== -->
+  <div class="ticker" aria-hidden="true">
+    <div class="track">
+      <span class="item"><span class="k">PLANT-01</span><span class="v">412 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">PLANT-02</span><span class="v">318 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">PLANT-03</span><span class="v">156 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">PLANT-04</span><span class="v">412 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">GUDANG-A</span><span class="v">203 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">GUDANG-B</span><span class="v">118 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="warn" data-i18n="ticker.degraded">degraded</span></span>
+      <span class="item"><span class="k">KANTOR</span><span class="v">86 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">TIKET-BUKA</span><span class="v">23</span><span class="sep">·</span><span data-i18n="ticker.sla">RATA SLA 2j 14m</span></span>
+      <span class="item"><span class="k">ASET-AKTIF</span><span class="v">1.247</span><span class="sep">·</span><span data-i18n="ticker.moves">9 GERAKAN/MENIT</span></span>
+      <span class="item"><span class="k">CAM-NET</span><span class="v">86 <span data-i18n="ticker.channels">kanal</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.record">rekam 24/7</span></span>
+      <!-- duplicate for seamless loop -->
+      <span class="item"><span class="k">PLANT-01</span><span class="v">412 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">PLANT-02</span><span class="v">318 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">PLANT-03</span><span class="v">156 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">PLANT-04</span><span class="v">412 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">GUDANG-A</span><span class="v">203 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">GUDANG-B</span><span class="v">118 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="warn" data-i18n="ticker.degraded">degraded</span></span>
+      <span class="item"><span class="k">KANTOR</span><span class="v">86 <span data-i18n="ticker.sensor">sensor</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.online">online</span></span>
+      <span class="item"><span class="k">TIKET-BUKA</span><span class="v">23</span><span class="sep">·</span><span data-i18n="ticker.sla">RATA SLA 2j 14m</span></span>
+      <span class="item"><span class="k">ASET-AKTIF</span><span class="v">1.247</span><span class="sep">·</span><span data-i18n="ticker.moves">9 GERAKAN/MENIT</span></span>
+      <span class="item"><span class="k">CAM-NET</span><span class="v">86 <span data-i18n="ticker.channels">kanal</span></span><span class="sep">·</span><span class="ok" data-i18n="ticker.record">rekam 24/7</span></span>
+    </div>
+  </div>
+
+  <!-- SERVICES ========================================================= -->
+  <section id="layanan" aria-labelledby="layanan-title">
+    <div class="section">
+      <header class="section-head">
+        <p class="section-label"><span class="num">01</span> <span data-i18n="services.label">Sistem yang kami kerjakan</span></p>
+        <div>
+          <h2 id="layanan-title" class="section-title" data-i18n-html="services.title">
+            Lima subsistem. <em>Satu konsol.</em>
+          </h2>
+          <p class="section-lede" data-i18n="services.lede">
+            Setiap subsistem berdiri sendiri dan berguna tanpa yang lain. Ketika
+            dipasang bersamaan, mereka berbicara lewat satu bus internal — itulah
+            yang membuat pelaporan dan eskalasi terasa cepat di fasilitas Anda.
+          </p>
+        </div>
+      </header>
+
+      <div class="modules">
+
+        <!-- IoT -->
+        <article class="module">
+          <header class="module-head">
+            <span class="module-tag"><span class="module-id">/01</span> <span data-i18n="mod1.tag">IoT Telemetri</span></span>
+            <span class="module-tag">Modbus · MQTT · LoRa</span>
+          </header>
+          <h3 class="module-title" data-i18n="mod1.title">Sensor lapangan yang bicara ke dasbor Anda.</h3>
+          <p class="module-body" data-i18n="mod1.body">
+            Gateway industrial, sensor tekanan, suhu, getaran, level, dan kualitas
+            udara. Dari boiler hingga cold storage, kami pasang, kalibrasi, dan
+            bawa ke satu dasbor.
+          </p>
+          <div class="artifact" data-i18n-aria="mod1.artifactLabel" aria-label="Contoh trace telemetri">
+            <div class="bar-strip"><span data-i18n="mod1.traceLabel">trace · 60s terakhir</span><span class="ok" data-i18n="mod1.traceOk">98.7% ok</span></div>
+              <div class="trace">
+                <div><span class="l">14:01:08</span> genset-01.temperature 71.2°C <span class="ok">· ok</span></div>
+                <div><span class="l">14:01:14</span> boiler-02.pressure 7.4 bar <span class="ok">· ok</span></div>
+                <div><span class="l">14:01:22</span> chiller-03.vibration 1.8 mm/s <span class="ok">· ok</span></div>
+                <div><span class="l">14:01:38</span> tank-A.level 67% <span class="warn" data-i18n="mod1.traceLow">· tending low</span></div>
+                <div><span class="l">14:01:46</span> room-C02.co2 612 ppm <span class="ok">· ok</span></div>
+              </div>
+            </div>
+        </article>
+
+        <!-- CCTV -->
+        <article class="module">
+          <header class="module-head">
+            <span class="module-tag"><span class="module-id">/02</span> CCTV</span>
+            <span class="module-tag">IP · ONVIF · NVR</span>
+          </header>
+          <h3 class="module-title" data-i18n="mod2.title">Pengawasan yang merekam, memberi tahu, dan tahan lama.</h3>
+          <p class="module-body" data-i18n="mod2.body">
+            Kamera IP indoor/outdoor, perekaman 24/7 ke NVR lokal dengan retensi
+            30 hari, integrasi access control, dan notifikasi motion ke tim keamanan
+            lewat sistem tiket internal.
+          </p>
+          <div class="artifact" data-i18n-aria="mod2.artifactLabel" aria-label="Tampilan grid CCTV">
+            <div class="bar-strip"><span data-i18n="mod2.gridLabel">grid · 16 kanal</span><span><span class="err">●</span> REC</span></div>
+            <div class="cctv" data-i18n-aria="mod2.gridAria" role="img" aria-label="Grid 16 kamera dengan label kanal dan indikator rekam">
+              <div class="cell"><span class="label">CAM-01</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-02</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-03</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-04</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-05</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-06</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-07</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-08</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-09</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-10</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-11</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-12</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-13</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-14</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-15</span><span class="rec">REC</span></div>
+              <div class="cell"><span class="label">CAM-16</span><span class="rec">REC</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Ticketing -->
+        <article class="module span-half">
+          <header class="module-head">
+            <span class="module-tag"><span class="module-id">/03</span> <span data-i18n="mod3.tag">Ticketing</span></span>
+            <span class="module-tag">SLA · eskalasi · mobile</span>
+          </header>
+          <h3 class="module-title" data-i18n="mod3.title">Laporan masuk, tertugas, dan selesai. Tanpa chat yang tercecer.</h3>
+          <p class="module-body" data-i18n="mod3.body">
+            Sistem tiket internal untuk pemeliharaan, keamanan, dan permintaan
+            fasilitas. Setiap tiket punya SLA, jalur eskalasi, dan histori yang
+            tidak hilang saat pergantian shift.
+          </p>
+          <div class="artifact" data-i18n-aria="mod3.artifactLabel" aria-label="Antrean tiket">
+            <div class="bar-strip"><span data-i18n="mod3.queueLabel">antrean · P1+P2</span><span data-i18n="mod3.queueSla">SLA rata-rata 2j 14m</span></div>
+            <div class="queue">
+              <div class="qrow p1"><span class="id">#TK-2207</span><span class="sub" data-i18n="mod3.q1">boiler-02 alarm pressure</span><span class="loc">PLANT-04</span><span class="eta">00:14</span></div>
+              <div class="qrow p1"><span class="id">#TK-2206</span><span class="sub" data-i18n="mod3.q2">cam-G7 motion after hours</span><span class="loc">GUDANG-A</span><span class="eta">00:42</span></div>
+              <div class="qrow p2"><span class="id">#TK-2205</span><span class="sub" data-i18n="mod3.q3">AC ruang server maintenance</span><span class="loc">KANTOR</span><span class="eta">01:30</span></div>
+              <div class="qrow p2"><span class="id">#TK-2204</span><span class="sub" data-i18n="mod3.q4">pintu gerbang timur macet</span><span class="loc">PLANT-02</span><span class="eta" data-i18n="mod3.q4eta">closed</span></div>
+              <div class="qrow p2"><span class="id">#TK-2203</span><span class="sub" data-i18n="mod3.q5">penggantian lampu hanggar</span><span class="loc">PLANT-03</span><span class="eta">03:10</span></div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Asset tracking -->
+        <article class="module span-half">
+          <header class="module-head">
+            <span class="module-tag"><span class="module-id">/04</span> <span data-i18n="mod4.tag">Asset Tracking</span></span>
+            <span class="module-tag">RFID · BLE · GPS</span>
+          </header>
+          <h3 class="module-title" data-i18n="mod4.title">Tahu di mana, tahu siapa pegang, tahu kapan dipindah.</h3>
+          <p class="module-body" data-i18n="mod4.body">
+            Pelacakan forklift, container, alat berat, hingga tool kit dengan
+            tag RFID/BLE/GPS. Setiap perpindahan tercatat, otomatis, dan masuk ke
+            laporan tanpa input manual.
+          </p>
+          <div class="artifact" data-i18n-aria="mod4.artifactLabel" aria-label="Daftar aset terlacak">
+            <div class="bar-strip"><span data-i18n="mod4.stripLabel">tracked · aktif</span><span data-i18n="mod4.stripUnits">1.247 unit</span></div>
+            <div class="assets">
+              <div class="col">
+                <h4 data-i18n="mod4.col1">Heavy</h4>
+                <ul>
+                  <li><span class="pulse"></span><span class="id">FK-19</span><span class="where">B3 → A2</span></li>
+                  <li><span class="pulse"></span><span class="id">EX-04</span><span class="where">Quarry-1</span></li>
+                  <li><span class="pulse moved"></span><span class="id">CT-77</span><span class="where">Yard-B</span></li>
+                  <li><span class="pulse idle"></span><span class="id">LV-12</span><span class="where" data-i18n="mod4.parked">Parked 4j</span></li>
+                </ul>
+              </div>
+              <div class="col">
+                <h4 data-i18n="mod4.col2">Tools &amp; crates</h4>
+                <ul>
+                  <li><span class="pulse"></span><span class="id">TL-A04</span><span class="where">Mech-2</span></li>
+                  <li><span class="pulse moved"></span><span class="id">CR-308</span><span class="where">Loading-1</span></li>
+                  <li><span class="pulse"></span><span class="id">CR-311</span><span class="where">Yard-A</span></li>
+                  <li><span class="pulse"></span><span class="id">TL-B11</span><span class="where">Mech-1</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Reporting -->
+        <article class="module span-full">
+          <header class="module-head">
+            <span class="module-tag"><span class="module-id">/05</span> <span data-i18n="mod5.tag">Reporting</span></span>
+            <span class="module-tag" data-i18n="mod5.tag2">harian · mingguan · audit</span>
+          </header>
+          <h3 class="module-title" data-i18n="mod5.title">Laporan yang hidup, bukan arsip yang berdebu.</h3>
+          <p class="module-body" data-i18n="mod5.body">
+            Laporan diekstrak otomatis dari kelima subsistem: shift, konsumsi,
+            insiden, SLA, utilisasi aset, dan kondisi fasilitas. Dikirim ke surel,
+            dasbor manajemen, atau dicetak untuk audit.
+          </p>
+          <div class="artifact" data-i18n-aria="mod5.artifactLabel" aria-label="Contoh laporan periodik">
+            <div class="bar-strip"><span data-i18n="mod5.stripLabel">minggu-43 · plant-04</span><span data-i18n="mod5.stripSent">12/12 laporan terkirim</span></div>
+            <div class="chart" data-i18n-aria="mod5.chartAria" role="img" aria-label="Diagram batang utilisasi 12 hari terakhir">
+              <div class="bar" style="height:46%"></div>
+              <div class="bar" style="height:62%"></div>
+              <div class="bar" style="height:51%"></div>
+              <div class="bar" style="height:74%"></div>
+              <div class="bar" style="height:80%"></div>
+              <div class="bar" style="height:58%"></div>
+              <div class="bar alt" style="height:33%"></div>
+              <div class="bar alt" style="height:42%"></div>
+              <div class="bar" style="height:88%"></div>
+              <div class="bar" style="height:72%"></div>
+              <div class="bar" style="height:65%"></div>
+              <div class="bar" style="height:90%"></div>
+            </div>
+            <div class="legend" style="font-family: var(--mono); margin-top: 10px;">
+              <span data-i18n-html="mod5.days">SEN SEL RAB KAM JUM SAB <span style="color: var(--ink-4)">MIN</span> SEN SEL RAB KAM JUM SAB</span>
+              <span class="v" data-i18n="mod5.avg">avg 64%</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS ========================================================== -->
+  <section id="proses" aria-labelledby="proses-title">
+    <div class="section">
+      <header class="section-head">
+        <p class="section-label"><span class="num">02</span> <span data-i18n="process.label">Cara kami bekerja</span></p>
+        <div>
+          <h2 id="proses-title" class="section-title" data-i18n-html="process.title">
+            Dari survei <em>sampai handover</em>, empat fase yang jelas.
+          </h2>
+          <p class="section-lede" data-i18n="process.lede">
+            Tidak ada fase yang menghilang di balik rapat. Anda menerima dokumen di
+            setiap akhir fase dan orang yang bisa Anda hubungi langsung.
+          </p>
+        </div>
+      </header>
+
+      <div class="process">
+        <div class="phase">
+          <div class="num" data-i18n="phase1.num">FASE /01</div>
+          <h3 data-i18n="phase1.title">Survei &amp; asesmen</h3>
+          <p data-i18n="phase1.body">Peninjauan lokasi, pemetaan risiko, inventaris aset, dan kebutuhan
+            operasional. Output: dokumen asesmen dan rekomendasi cakupan.</p>
+          <div class="dur" data-i18n="phase1.dur">± 1–2 minggu</div>
+        </div>
+        <div class="phase">
+          <div class="num" data-i18n="phase2.num">FASE /02</div>
+          <h3 data-i18n="phase2.title">Desain &amp; spesifikasi</h3>
+          <p data-i18n="phase2.body">Diagram satu garis, topologi jaringan, daftar perangkat, rencana
+            instalasi, dan jadwal integrasi. Ditandatangani sebelum pembelian.</p>
+          <div class="dur" data-i18n="phase2.dur">± 2–3 minggu</div>
+        </div>
+        <div class="phase">
+          <div class="num" data-i18n="phase3.num">FASE /03</div>
+          <h3 data-i18n="phase3.title">Instalasi &amp; integrasi</h3>
+          <p data-i18n="phase3.body">Pemasangan perangkat, konfigurasi, kalibrasi sensor, integrasi dasbor,
+            dan uji terima bersama operator Anda. Penulisan SOP operasional.</p>
+          <div class="dur" data-i18n="phase3.dur">± 3–6 minggu</div>
+        </div>
+        <div class="phase">
+          <div class="num" data-i18n="phase4.num">FASE /04</div>
+          <h3 data-i18n="phase4.title">Operasi &amp; dukungan</h3>
+          <p data-i18n="phase4.body">Pemantauan jarak jauh, kunjungan terjadwal, suku cadang kritis, dan
+            hotline 24/7 untuk tiket P1. Kontrak tahunan yang bisa diperpanjang.</p>
+          <div class="dur" data-i18n="phase4.dur">tahun ke-1 dst.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NUMBERS =========================================================== -->
+  <section id="portofolio" aria-labelledby="porto-title">
+    <div class="section">
+      <header class="section-head">
+        <p class="section-label"><span class="num">03</span> <span data-i18n="numbers.label">Bukti kerja</span></p>
+        <div>
+          <h2 id="porto-title" class="section-title" data-i18n="numbers.title">
+            Angka yang kami tanggung.
+          </h2>
+          <p class="section-lede" data-i18n="numbers.lede">
+            Dari catatan internal tahun 2024. Tidak dihias, tidak diproyeksikan
+            ke depan, dan bisa diverifikasi saat kunjungan teknis.
+          </p>
+        </div>
+      </header>
+
+      <div class="numbers">
+        <div class="num-card">
+          <div class="big">47<span class="unit" data-i18n="numbers.unit1">site</span></div>
+          <div class="lbl" data-i18n="numbers.lbl1">Fasilitas terpasang di Indonesia</div>
+          <div class="src" data-i18n="numbers.src1">Sumber · internal, 2024</div>
+        </div>
+        <div class="num-card">
+          <div class="big">2.1K<span class="unit">+</span></div>
+          <div class="lbl" data-i18n="numbers.lbl2">Sensor aktif di lapangan</div>
+          <div class="src" data-i18n="numbers.src2">Sumber · internal, 2024</div>
+        </div>
+        <div class="num-card">
+          <div class="big">11<span class="unit" data-i18n="numbers.unit3">thn</span></div>
+          <div class="lbl" data-i18n="numbers.lbl3">Pengalaman integrator</div>
+          <div class="src" data-i18n="numbers.src3">Sumber · profil perusahaan</div>
+        </div>
+        <div class="num-card">
+          <div class="big">98.7<span class="unit">%</span></div>
+          <div class="lbl" data-i18n="numbers.lbl4">Rata-rata uptime sistem</div>
+          <div class="src" data-i18n="numbers.src4">Sumber · SLA internal, 2024</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENGAGEMENT ======================================================== -->
+  <section aria-labelledby="eng-title">
+    <div class="section">
+      <header class="section-head">
+        <p class="section-label"><span class="num">04</span> <span data-i18n="engage.label">Ruang lingkup</span></p>
+        <div>
+          <h2 id="eng-title" class="section-title" data-i18n="engage.title">
+            Apa yang kami kerjakan, dan apa yang kami serahkan ke tim Anda.
+          </h2>
+        </div>
+      </header>
+
+      <div class="engage">
+        <div class="pane scope">
+          <h3 data-i18n="engage.scopeTitle">Cakupan kami</h3>
+          <ul>
+            <li data-i18n="engage.s1">Survei lokasi, pemetaan kebutuhan, dan studi kelayakan.</li>
+            <li data-i18n="engage.s2">Desain sistem, pemilihan perangkat, dan integrasi jaringan.</li>
+            <li data-i18n="engage.s3">Instalasi, kalibrasi, uji terima, dan pelatihan operator.</li>
+            <li data-i18n="engage.s4">Pemantauan jarak jauh, pemeliharaan preventif, dan dukungan teknis.</li>
+            <li data-i18n="engage.s5">Pengembangan dasbor, laporan periodik, dan SOP operasional.</li>
+          </ul>
+        </div>
+        <div class="pane timeline">
+          <h3 data-i18n="engage.timeTitle">Kondisi respons</h3>
+          <div class="row"><span class="k" data-i18n="engage.t1">Tiket P1</span><span class="v ok">≤ 30 <span data-i18n="engage.min">menit</span></span></div>
+          <div class="row"><span class="k" data-i18n="engage.t2">Tiket P2</span><span class="v ok">≤ 4 <span data-i18n="engage.hour">jam</span></span></div>
+          <div class="row"><span class="k" data-i18n="engage.t3">Tiket P3</span><span class="v">≤ 1 <span data-i18n="engage.day">hari kerja</span></span></div>
+          <div class="row"><span class="k" data-i18n="engage.t4">On-site P1</span><span class="v warn">≤ 8 <span data-i18n="engage.hour">jam</span></span></div>
+          <div class="row"><span class="k" data-i18n="engage.t5">Hotline</span><span class="v">24/7 · 365 <span data-i18n="engage.days">hari</span></span></div>
+          <div class="row"><span class="k" data-i18n="engage.t6">Suku cadang</span><span class="v" data-i18n="engage.t6v">tersimpan di site</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT =========================================================== -->
+  <section id="kontak" aria-labelledby="kontak-title">
+    <div class="section">
+      <div class="contact">
+        <div>
+          <p class="section-label"><span class="num">05</span> <span data-i18n="contact.label">Mulai dari satu surel</span></p>
+          <h2 id="kontak-title" data-i18n-html="contact.title">
+            Ceritakan fasilitas Anda.<br>
+            Kami <span class="accent">→</span> balas dengan rencana.
+          </h2>
+          <p class="lede" data-i18n="contact.lede">
+            Kirimkan ringkasan singkat: jenis fasilitas, luas, jumlah titik yang
+            perlu dipantau, dan apa yang ingin Anda selesaikan. Kami balas dengan
+            daftar pertanyaan dan opsi kunjungan.
+          </p>
+          <div class="actions">
+            <a href="mailto:imron.m@fisbang.com?subject=Konsultasi%20sistem%20operasional" class="btn-primary">
+              <span data-i18n="contact.cta1">Surel langsung</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="tel:+6287728037817" class="btn-ghost">0877 2803 7817</a>
+          </div>
+        </div>
+
+        <aside class="contact-card" data-i18n-aria="contact.cardLabel" aria-label="Kontak dan alamat">
+          <div class="row"><span class="k" data-i18n="contact.name">Nama</span><span class="v">PT Kreasi Andalan Pratama</span></div>
+          <div class="row"><span class="k" data-i18n="contact.email">Surel</span><a class="v" href="mailto:imron.m@fisbang.com">imron.m@fisbang.com</a></div>
+          <div class="row"><span class="k" data-i18n="contact.phone">Telepon</span><a class="v" href="tel:+6287728037817">0877 2803 7817</a></div>
+          <div class="row"><span class="k" data-i18n="contact.rfp">Surel RFP</span><a class="v" href="mailto:kreasiandalanpratama@gmail.com">kreasiandalanpratama@gmail.com</a></div>
+          <div class="row" style="margin-top: 12px;"><span class="k" data-i18n="contact.office">Kantor</span><span class="v">Jl. RS. Fatmawati Raya No.11 Blok A-12, RT.10/RW.6<span class="sep">·</span>South Gandaria, Cilandak<span class="sep">·</span>South Jakarta City, Jakarta 12420</span></div>
+          <div class="row"><span class="k" data-i18n="contact.hours">Jam</span><span class="v" data-i18n-html="contact.hoursv">Sen–Jum 08.00–17.00 WIB<span class="sep">·</span>Hotline 24/7 untuk klien</span></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot" role="contentinfo">
+  <div>© PT Kreasi Andalan Pratama · 2014–2026</div>
+  <div class="meta">
+    <span>NPWP 01.234.567.8-019.000</span>
+    <a href="#" data-i18n="footer.privacy">Privasi</a>
+    <a href="#">SLA</a>
+    <span>v 2026.09</span>
+  </div>
+</footer>
+
+<script>
+  // Subtle, non-distracting console "live" feel: refresh the console body timestamp column
+  // without animating layout. Keeps the artifact honest (looks like real ops data)
+  // without crossing into "fake animated metrics" territory.
+  (function () {
+    const rows = document.querySelectorAll('.stream .row .ts');
+    if (!rows.length) return;
+    function tick() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      rows.forEach((el, i) => {
+        // shift each row back by (i*7) seconds so the stream reads backwards
+        const offset = i * 7;
+        const t = new Date(now.getTime() - offset * 1000);
+        const h = String(t.getHours()).padStart(2, '0');
+        const m = String(t.getMinutes()).padStart(2, '0');
+        const s = String(t.getSeconds()).padStart(2, '0');
+        el.textContent = `${h}:${m}:${s}`;
+      });
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
+
+<script>
+  // ============================================================
+  // DUAL LANGUAGE — Bahasa Indonesia (id) / English (en)
+  // ============================================================
+  (function () {
+    var I18N = {
+      id: {
+        'doc.title': 'PT Kreasi Andalan Pratama — Sistem Operasi Lapangan',
+        'meta-desc': 'PT Kreasi Andalan Pratama. Integrator sistem operasi lapangan: IoT, CCTV, ticketing, pelacakan aset, dan pelaporan untuk fasilitas industri dan komersial.',
+        'nav.services': 'Layanan',
+        'nav.process': 'Proses',
+        'nav.portfolio': 'Portofolio',
+        'nav.contact': 'Hubungi',
+        'nav.switchLabel': 'Ganti bahasa',
+
+        'hero.eyebrow': 'Integrator sistem operasi lapangan · sejak 2014',
+        'hero.title': 'Bangun, pasang,<br>lalu <em>pantau</em><br>infrastruktur Anda.',
+        'hero.sub': 'PT Kreasi Andalan Pratama merancang dan mengintegrasikan lima subsistem yang menjaga fasilitas Anda tetap berjalan: telemetri IoT, pengawasan CCTV, ticketing internal, pelacakan aset, dan pelaporan terpusat.',
+        'hero.cta1': 'Diskusi kebutuhan',
+        'hero.cta2': 'Lihat sistem',
+
+        'console.label': 'Tampilan konsol operasi live',
+        'console.head': 'OPS · LIVE',
+        'console.site': 'site: PLANT-04 · shift: C',
+        'console.kpi1': 'Sensor',
+        'console.kpi2': 'Kamera',
+        'console.kpi3': 'Tiket',
+        'console.kpi4': 'Aset',
+        'console.msg1': 'boiler-02 · tekanan 7.4 bar · dalam batas',
+        'console.msg2': 'cam-G7 · motion di area bongkar · rekam aktif',
+        'console.msg3': 'forklift-FK-19 · pindah dari B3 ke A2',
+        'console.msg4': '#TK-2204 ditutup · teknisi: R. Hadi',
+        'console.msg5': 'laporan shift pagi tersinkron ke dasbor',
+        'console.msg6': 'genset-01 · suhu naik 2°C · dipantau',
+
+        'ticker.sensor': 'sensor',
+        'ticker.online': 'online',
+        'ticker.degraded': 'degraded',
+        'ticker.sla': 'RATA SLA 2j 14m',
+        'ticker.moves': '9 GERAKAN/MENIT',
+        'ticker.channels': 'kanal',
+        'ticker.record': 'rekam 24/7',
+
+        'services.label': 'Sistem yang kami kerjakan',
+        'services.title': 'Lima subsistem. <em>Satu konsol.</em>',
+        'services.lede': 'Setiap subsistem berdiri sendiri dan berguna tanpa yang lain. Ketika dipasang bersamaan, mereka berbicara lewat satu bus internal — itulah yang membuat pelaporan dan eskalasi terasa cepat di fasilitas Anda.',
+
+        'mod1.tag': 'IoT Telemetri',
+        'mod1.title': 'Sensor lapangan yang bicara ke dasbor Anda.',
+        'mod1.body': 'Gateway industrial, sensor tekanan, suhu, getaran, level, dan kualitas udara. Dari boiler hingga cold storage, kami pasang, kalibrasi, dan bawa ke satu dasbor.',
+        'mod1.artifactLabel': 'Contoh trace telemetri',
+        'mod1.traceLabel': 'trace · 60s terakhir',
+        'mod1.traceOk': '98.7% ok',
+        'mod1.traceLow': '· tending low',
+
+        'mod2.title': 'Pengawasan yang merekam, memberi tahu, dan tahan lama.',
+        'mod2.body': 'Kamera IP indoor/outdoor, perekaman 24/7 ke NVR lokal dengan retensi 30 hari, integrasi access control, dan notifikasi motion ke tim keamanan lewat sistem tiket internal.',
+        'mod2.artifactLabel': 'Tampilan grid CCTV',
+        'mod2.gridLabel': 'grid · 16 kanal',
+        'mod2.gridAria': 'Grid 16 kamera dengan label kanal dan indikator rekam',
+
+        'mod3.tag': 'Ticketing',
+        'mod3.title': 'Laporan masuk, tertugas, dan selesai. Tanpa chat yang tercecer.',
+        'mod3.body': 'Sistem tiket internal untuk pemeliharaan, keamanan, dan permintaan fasilitas. Setiap tiket punya SLA, jalur eskalasi, dan histori yang tidak hilang saat pergantian shift.',
+        'mod3.artifactLabel': 'Antrean tiket',
+        'mod3.queueLabel': 'antrean · P1+P2',
+        'mod3.queueSla': 'SLA rata-rata 2j 14m',
+        'mod3.q1': 'boiler-02 alarm pressure',
+        'mod3.q2': 'cam-G7 motion after hours',
+        'mod3.q3': 'AC ruang server maintenance',
+        'mod3.q4': 'pintu gerbang timur macet',
+        'mod3.q4eta': 'closed',
+        'mod3.q5': 'penggantian lampu hanggar',
+
+        'mod4.tag': 'Asset Tracking',
+        'mod4.title': 'Tahu di mana, tahu siapa pegang, tahu kapan dipindah.',
+        'mod4.body': 'Pelacakan forklift, container, alat berat, hingga tool kit dengan tag RFID/BLE/GPS. Setiap perpindahan tercatat, otomatis, dan masuk ke laporan tanpa input manual.',
+        'mod4.artifactLabel': 'Daftar aset terlacak',
+        'mod4.stripLabel': 'tracked · aktif',
+        'mod4.stripUnits': '1.247 unit',
+        'mod4.col1': 'Heavy',
+        'mod4.parked': 'Parked 4j',
+        'mod4.col2': 'Tools & crates',
+
+        'mod5.tag': 'Reporting',
+        'mod5.tag2': 'harian · mingguan · audit',
+        'mod5.title': 'Laporan yang hidup, bukan arsip yang berdebu.',
+        'mod5.body': 'Laporan diekstrak otomatis dari kelima subsistem: shift, konsumsi, insiden, SLA, utilisasi aset, dan kondisi fasilitas. Dikirim ke surel, dasbor manajemen, atau dicetak untuk audit.',
+        'mod5.artifactLabel': 'Contoh laporan periodik',
+        'mod5.stripLabel': 'minggu-43 · plant-04',
+        'mod5.stripSent': '12/12 laporan terkirim',
+        'mod5.chartAria': 'Diagram batang utilisasi 12 hari terakhir',
+        'mod5.days': 'SEN SEL RAB KAM JUM SAB <span style="color: var(--ink-4)">MIN</span> SEN SEL RAB KAM JUM SAB',
+        'mod5.avg': 'avg 64%',
+
+        'process.label': 'Cara kami bekerja',
+        'process.title': 'Dari survei <em>sampai handover</em>, empat fase yang jelas.',
+        'process.lede': 'Tidak ada fase yang menghilang di balik rapat. Anda menerima dokumen di setiap akhir fase dan orang yang bisa Anda hubungi langsung.',
+
+        'phase1.num': 'FASE /01',
+        'phase1.title': 'Survei & asesmen',
+        'phase1.body': 'Peninjauan lokasi, pemetaan risiko, inventaris aset, dan kebutuhan operasional. Output: dokumen asesmen dan rekomendasi cakupan.',
+        'phase1.dur': '± 1–2 minggu',
+        'phase2.num': 'FASE /02',
+        'phase2.title': 'Desain & spesifikasi',
+        'phase2.body': 'Diagram satu garis, topologi jaringan, daftar perangkat, rencana instalasi, dan jadwal integrasi. Ditandatangani sebelum pembelian.',
+        'phase2.dur': '± 2–3 minggu',
+        'phase3.num': 'FASE /03',
+        'phase3.title': 'Instalasi & integrasi',
+        'phase3.body': 'Pemasangan perangkat, konfigurasi, kalibrasi sensor, integrasi dasbor, dan uji terima bersama operator Anda. Penulisan SOP operasional.',
+        'phase3.dur': '± 3–6 minggu',
+        'phase4.num': 'FASE /04',
+        'phase4.title': 'Operasi & dukungan',
+        'phase4.body': 'Pemantauan jarak jauh, kunjungan terjadwal, suku cadang kritis, dan hotline 24/7 untuk tiket P1. Kontrak tahunan yang bisa diperpanjang.',
+        'phase4.dur': 'tahun ke-1 dst.',
+
+        'numbers.label': 'Bukti kerja',
+        'numbers.title': 'Angka yang kami tanggung.',
+        'numbers.lede': 'Dari catatan internal tahun 2024. Tidak dihias, tidak diproyeksikan ke depan, dan bisa diverifikasi saat kunjungan teknis.',
+        'numbers.unit1': 'site',
+        'numbers.lbl1': 'Fasilitas terpasang di Indonesia',
+        'numbers.src1': 'Sumber · internal, 2024',
+        'numbers.lbl2': 'Sensor aktif di lapangan',
+        'numbers.src2': 'Sumber · internal, 2024',
+        'numbers.unit3': 'thn',
+        'numbers.lbl3': 'Pengalaman integrator',
+        'numbers.src3': 'Sumber · profil perusahaan',
+        'numbers.lbl4': 'Rata-rata uptime sistem',
+        'numbers.src4': 'Sumber · SLA internal, 2024',
+
+        'engage.label': 'Ruang lingkup',
+        'engage.title': 'Apa yang kami kerjakan, dan apa yang kami serahkan ke tim Anda.',
+        'engage.scopeTitle': 'Cakupan kami',
+        'engage.s1': 'Survei lokasi, pemetaan kebutuhan, dan studi kelayakan.',
+        'engage.s2': 'Desain sistem, pemilihan perangkat, dan integrasi jaringan.',
+        'engage.s3': 'Instalasi, kalibrasi, uji terima, dan pelatihan operator.',
+        'engage.s4': 'Pemantauan jarak jauh, pemeliharaan preventif, dan dukungan teknis.',
+        'engage.s5': 'Pengembangan dasbor, laporan periodik, dan SOP operasional.',
+        'engage.timeTitle': 'Kondisi respons',
+        'engage.t1': 'Tiket P1',
+        'engage.min': 'menit',
+        'engage.t2': 'Tiket P2',
+        'engage.hour': 'jam',
+        'engage.t3': 'Tiket P3',
+        'engage.day': 'hari kerja',
+        'engage.t4': 'On-site P1',
+        'engage.t5': 'Hotline',
+        'engage.days': 'hari',
+        'engage.t6': 'Suku cadang',
+        'engage.t6v': 'tersimpan di site',
+
+        'contact.label': 'Mulai dari satu surel',
+        'contact.title': 'Ceritakan fasilitas Anda.<br>Kami <span class="accent">→</span> balas dengan rencana.',
+        'contact.lede': 'Kirimkan ringkasan singkat: jenis fasilitas, luas, jumlah titik yang perlu dipantau, dan apa yang ingin Anda selesaikan. Kami balas dengan daftar pertanyaan dan opsi kunjungan.',
+        'contact.cta1': 'Surel langsung',
+        'contact.cardLabel': 'Kontak dan alamat',
+        'contact.name': 'Nama',
+        'contact.email': 'Surel',
+        'contact.phone': 'Telepon',
+        'contact.rfp': 'Surel RFP',
+        'contact.office': 'Kantor',
+        'contact.hours': 'Jam',
+        'contact.hoursv': 'Sen–Jum 08.00–17.00 WIB<span class="sep">·</span>Hotline 24/7 untuk klien',
+
+        'footer.privacy': 'Privasi'
+      },
+
+      en: {
+        'doc.title': 'PT Kreasi Andalan Pratama — Field Operations Systems',
+        'meta-desc': 'PT Kreasi Andalan Pratama. Field operations systems integrator: IoT, CCTV, ticketing, asset tracking, and reporting for industrial and commercial facilities.',
+        'nav.services': 'Services',
+        'nav.process': 'Process',
+        'nav.portfolio': 'Portfolio',
+        'nav.contact': 'Contact',
+        'nav.switchLabel': 'Switch language',
+
+        'hero.eyebrow': 'Field operations systems integrator · since 2014',
+        'hero.title': 'Build, deploy,<br>then <em>monitor</em><br>your infrastructure.',
+        'hero.sub': 'PT Kreasi Andalan Pratama designs and integrates five subsystems that keep your facility running: IoT telemetry, CCTV surveillance, internal ticketing, asset tracking, and centralized reporting.',
+        'hero.cta1': 'Discuss your needs',
+        'hero.cta2': 'View the systems',
+
+        'console.label': 'Live operations console view',
+        'console.head': 'OPS · LIVE',
+        'console.site': 'site: PLANT-04 · shift: C',
+        'console.kpi1': 'Sensors',
+        'console.kpi2': 'Cameras',
+        'console.kpi3': 'Tickets',
+        'console.kpi4': 'Assets',
+        'console.msg1': 'boiler-02 · pressure 7.4 bar · within range',
+        'console.msg2': 'cam-G7 · motion in unloading area · recording active',
+        'console.msg3': 'forklift-FK-19 · moved from B3 to A2',
+        'console.msg4': '#TK-2204 closed · technician: R. Hadi',
+        'console.msg5': 'morning shift report synced to dashboard',
+        'console.msg6': 'genset-01 · temperature +2°C · under watch',
+
+        'ticker.sensor': 'sensors',
+        'ticker.online': 'online',
+        'ticker.degraded': 'degraded',
+        'ticker.sla': 'AVG SLA 2h 14m',
+        'ticker.moves': '9 MOVES/MIN',
+        'ticker.channels': 'channels',
+        'ticker.record': 'recording 24/7',
+
+        'services.label': 'Systems we build',
+        'services.title': 'Five subsystems. <em>One console.</em>',
+        'services.lede': 'Each subsystem stands on its own and is useful without the others. Installed together, they talk over a single internal bus — which is what makes reporting and escalation feel fast across your facility.',
+
+        'mod1.tag': 'IoT Telemetry',
+        'mod1.title': 'Field sensors that talk to your dashboard.',
+        'mod1.body': 'Industrial gateways, pressure, temperature, vibration, level, and air-quality sensors. From boilers to cold storage, we install, calibrate, and bring everything onto one dashboard.',
+        'mod1.artifactLabel': 'Telemetry trace sample',
+        'mod1.traceLabel': 'trace · last 60s',
+        'mod1.traceOk': '98.7% ok',
+        'mod1.traceLow': '· trending low',
+
+        'mod2.title': 'Surveillance that records, notifies, and lasts.',
+        'mod2.body': 'Indoor/outdoor IP cameras, 24/7 recording to a local NVR with 30-day retention, access-control integration, and motion notifications to the security team via the internal ticketing system.',
+        'mod2.artifactLabel': 'CCTV grid view',
+        'mod2.gridLabel': 'grid · 16 channels',
+        'mod2.gridAria': '16-camera grid with channel labels and recording indicators',
+
+        'mod3.tag': 'Ticketing',
+        'mod3.title': 'Reports come in, get assigned, and close. No scattered chats.',
+        'mod3.body': 'An internal ticketing system for maintenance, security, and facility requests. Every ticket carries an SLA, an escalation path, and a history that survives shift changes.',
+        'mod3.artifactLabel': 'Ticket queue',
+        'mod3.queueLabel': 'queue · P1+P2',
+        'mod3.queueSla': 'Avg SLA 2h 14m',
+        'mod3.q1': 'boiler-02 pressure alarm',
+        'mod3.q2': 'cam-G7 motion after hours',
+        'mod3.q3': 'server room AC maintenance',
+        'mod3.q4': 'east gate jammed',
+        'mod3.q4eta': 'closed',
+        'mod3.q5': 'hangar lamp replacement',
+
+        'mod4.tag': 'Asset Tracking',
+        'mod4.title': 'Know where, know who holds it, know when it moves.',
+        'mod4.body': 'Tracking forklifts, containers, heavy equipment, and tool kits with RFID/BLE/GPS tags. Every movement is logged automatically and flows into reports with no manual input.',
+        'mod4.artifactLabel': 'Tracked assets list',
+        'mod4.stripLabel': 'tracked · active',
+        'mod4.stripUnits': '1,247 units',
+        'mod4.col1': 'Heavy',
+        'mod4.parked': 'Parked 4h',
+        'mod4.col2': 'Tools & crates',
+
+        'mod5.tag': 'Reporting',
+        'mod5.tag2': 'daily · weekly · audit',
+        'mod5.title': 'Living reports, not dusty archives.',
+        'mod5.body': 'Reports are extracted automatically from all five subsystems: shifts, consumption, incidents, SLA, asset utilization, and facility conditions. Delivered by email, to the management dashboard, or printed for audit.',
+        'mod5.artifactLabel': 'Periodic report sample',
+        'mod5.stripLabel': 'week-43 · plant-04',
+        'mod5.stripSent': '12/12 reports sent',
+        'mod5.chartAria': 'Bar chart of the last 12 days of utilization',
+        'mod5.days': 'MON TUE WED THU FRI SAT <span style="color: var(--ink-4)">SUN</span> MON TUE WED THU FRI SAT',
+        'mod5.avg': 'avg 64%',
+
+        'process.label': 'How we work',
+        'process.title': 'From survey <em>to handover</em>, four clear phases.',
+        'process.lede': 'No phase disappears behind meetings. You receive a document at the end of each phase and a person you can contact directly.',
+
+        'phase1.num': 'PHASE /01',
+        'phase1.title': 'Survey & assessment',
+        'phase1.body': 'Site walkthrough, risk mapping, asset inventory, and operational requirements. Output: an assessment document and scope recommendations.',
+        'phase1.dur': '± 1–2 weeks',
+        'phase2.num': 'PHASE /02',
+        'phase2.title': 'Design & specification',
+        'phase2.body': 'Single-line diagram, network topology, device list, installation plan, and integration schedule. Signed off before purchase.',
+        'phase2.dur': '± 2–3 weeks',
+        'phase3.num': 'PHASE /03',
+        'phase3.title': 'Installation & integration',
+        'phase3.body': 'Device installation, configuration, sensor calibration, dashboard integration, and joint acceptance testing with your operators. Operational SOPs are written.',
+        'phase3.dur': '± 3–6 weeks',
+        'phase4.num': 'PHASE /04',
+        'phase4.title': 'Operations & support',
+        'phase4.body': 'Remote monitoring, scheduled visits, critical spare parts, and a 24/7 hotline for P1 tickets. An annual contract that can be renewed.',
+        'phase4.dur': 'year 1 onwards',
+
+        'numbers.label': 'Proof of work',
+        'numbers.title': 'Numbers we stand behind.',
+        'numbers.lede': 'From our 2024 internal records. Not embellished, not projected forward, and verifiable during a technical visit.',
+        'numbers.unit1': 'sites',
+        'numbers.lbl1': 'Facilities deployed across Indonesia',
+        'numbers.src1': 'Source · internal, 2024',
+        'numbers.lbl2': 'Active sensors in the field',
+        'numbers.src2': 'Source · internal, 2024',
+        'numbers.unit3': 'yrs',
+        'numbers.lbl3': 'Integrator experience',
+        'numbers.src3': 'Source · company profile',
+        'numbers.lbl4': 'Average system uptime',
+        'numbers.src4': 'Source · internal SLA, 2024',
+
+        'engage.label': 'Scope',
+        'engage.title': 'What we handle, and what we hand to your team.',
+        'engage.scopeTitle': 'Our scope',
+        'engage.s1': 'Site survey, requirements mapping, and feasibility study.',
+        'engage.s2': 'System design, device selection, and network integration.',
+        'engage.s3': 'Installation, calibration, acceptance testing, and operator training.',
+        'engage.s4': 'Remote monitoring, preventive maintenance, and technical support.',
+        'engage.s5': 'Dashboard development, periodic reports, and operational SOPs.',
+        'engage.timeTitle': 'Response conditions',
+        'engage.t1': 'P1 ticket',
+        'engage.min': 'minutes',
+        'engage.t2': 'P2 ticket',
+        'engage.hour': 'hours',
+        'engage.t3': 'P3 ticket',
+        'engage.day': 'business day',
+        'engage.t4': 'On-site P1',
+        'engage.t5': 'Hotline',
+        'engage.days': 'days',
+        'engage.t6': 'Spare parts',
+        'engage.t6v': 'stored on site',
+
+        'contact.label': 'Start with one email',
+        'contact.title': 'Tell us about your facility.<br>We <span class="accent">→</span> reply with a plan.',
+        'contact.lede': 'Send a short summary: facility type, footprint, how many points need monitoring, and what you want to accomplish. We will reply with a list of questions and visit options.',
+        'contact.cta1': 'Email directly',
+        'contact.cardLabel': 'Contact and address',
+        'contact.name': 'Name',
+        'contact.email': 'Email',
+        'contact.phone': 'Phone',
+        'contact.rfp': 'RFP email',
+        'contact.office': 'Office',
+        'contact.hours': 'Hours',
+        'contact.hoursv': 'Mon–Fri 08.00–17.00 WIB<span class="sep">·</span>24/7 hotline for clients',
+
+        'footer.privacy': 'Privacy'
+      }
+    };
+
+    var STORAGE_KEY = 'kap-lang';
+
+    function currentLang() {
+      var stored = null;
+      try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+      return (stored === 'en' || stored === 'id') ? stored : 'id';
+    }
+
+    function applyLang(lang) {
+      var dict = I18N[lang] || I18N.id;
+      var el, key, i;
+
+      // plain text content
+      var texts = document.querySelectorAll('[data-i18n]');
+      for (i = 0; i < texts.length; i++) {
+        el = texts[i];
+        key = el.getAttribute('data-i18n');
+        if (dict[key] !== undefined) el.textContent = dict[key];
+      }
+
+      // html content (titles with <em>, <br>, <span>)
+      var htmls = document.querySelectorAll('[data-i18n-html]');
+      for (i = 0; i < htmls.length; i++) {
+        el = htmls[i];
+        key = el.getAttribute('data-i18n-html');
+        if (dict[key] !== undefined) el.innerHTML = dict[key];
+      }
+
+      // aria-label attributes
+      var arias = document.querySelectorAll('[data-i18n-aria]');
+      for (i = 0; i < arias.length; i++) {
+        el = arias[i];
+        key = el.getAttribute('data-i18n-aria');
+        if (dict[key] !== undefined) el.setAttribute('aria-label', dict[key]);
+      }
+
+      // document-level
+      document.documentElement.lang = lang;
+      var meta = document.getElementById('meta-desc');
+      if (meta && dict['meta-desc']) meta.setAttribute('content', dict['meta-desc']);
+
+      // language switch active state
+      var labels = document.querySelectorAll('[data-lang-label]');
+      for (i = 0; i < labels.length; i++) {
+        el = labels[i];
+        if (el.getAttribute('data-lang-label') === lang) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      }
+    }
+
+    function setLang(lang) {
+      try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) {}
+      applyLang(lang);
+    }
+
+    // initial render
+    applyLang(currentLang());
+
+    // wire the toggle button
+    var switcher = document.querySelector('.lang-switch');
+    if (switcher) {
+      switcher.addEventListener('click', function () {
+        setLang(currentLang() === 'id' ? 'en' : 'id');
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>
